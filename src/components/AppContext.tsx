@@ -1,10 +1,13 @@
 import { createContext, useEffect, useState } from "react"
-import { getAllLocalStorage } from "../services/storage"
+import { login } from "../services/login"
 
 interface IAppContext {
-    user: string,
+    user: {
+      name: string,
+      email: string
+    } | null,
     isLoggedIn: boolean,
-    setIsLoggedIn: (isLoggedIn: boolean) => void
+    signIn: (email: string, password: string) => Promise<boolean>
 }
   
 export const AppContext = createContext({} as IAppContext)
@@ -12,19 +15,28 @@ export const AppContext = createContext({} as IAppContext)
 export const AppContextProvider = ({ children }: any) => {
     const [ isLoggedIn, setIsLoggedIn ] = useState<boolean>(false)
 
-    const storage = getAllLocalStorage()
+    const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null
 
     useEffect(() => {
-      if(storage){
-        const { login } = JSON.parse(storage)
-        setIsLoggedIn(login)
+      if(localStorage.getItem('user')){
+        setIsLoggedIn(true)
       }
     }, [])
 
-    const user = 'nathally'
-  
+    const signIn = async (email: string, password: string) => {
+      if (!(await login(email, password))) {
+        return false
+      }
+
+      setIsLoggedIn(true)
+
+      localStorage.setItem('user', JSON.stringify({ name: 'John Doe', email }))
+
+      return true
+    }
+
     return (
-      <AppContext.Provider value={{ user, isLoggedIn, setIsLoggedIn }}>
+      <AppContext.Provider value={{ user, isLoggedIn, signIn }}>
         { children }
       </AppContext.Provider>
     )
